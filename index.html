@@ -150,8 +150,9 @@
                 // extract attributes
                 else if(/setAttribute/.test(newLine)){
                     if(newLine.match(/\s?(.+).setAttribute/)[1].trim() == nodeName){
-                        let key = newLine.match(/setAttribute\((.+)\)/)[1].split(',')[0];
-                        let value = newLine.match(/setAttribute\((.+)\)/)[1].split(',')[1];
+                        let attr = newLine.match(/setAttribute\((.+)\)/)[1];
+                        let key = attr.slice(0,attr.indexOf(','));
+                        let value = attr.slice(attr.indexOf(',')+1);
                         attributes += `${key}:${value},`;
                     }
                     else{
