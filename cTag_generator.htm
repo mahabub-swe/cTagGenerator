@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        *{
+            box-sizing: border-box;
+        }
+        html,body{
+            height: 100%;
+        }
+        #source{
+            height: 100%;
+            width: 100%;
+            overflow-x: hidden;
+            padding: 15px;
+        }
+        #source::selection{
+            background-color: rgb(255, 0, 0);
+            color: seashell;
+        }
+        #output{
+            box-shadow: 0 0 3px black ;
+            border: 2px solid gray;
+            height: 100%;
+            width: 100%;
+            overflow-x: hidden;
+            color: blueviolet;
+            padding: 15px;
+        }
+        #outputContainer,#sourceContainer{
+            height: 45%;
+            position: relative;
+        }
+        #outputContainer button,#sourceContainer button{
+            position: absolute;
+            right: 0px;
+            top: 0px;
+            padding: 10px 15px;
+        }
+        button{
+            padding: 5px;
+        }
+        #buttonContainer{
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2px;
+        }
+        #error{
+            color: rgb(255, 0, 0);
+        }
+        #alerter{
+            position: fixed;
+            top: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 8px 20px;
+            transition: .5s;
+            opacity: 0;
+            color: cornsilk;
+        }
+    </style>
+</head>
+<body>
+    <div id="alerter">alert here</div>
+    <div id="buttonContainer">
+        <button id="generator">generate cTag</button>
+        <div id="sampleContiner">
+            <button class="sample">sample 1</button>
+            <button class="sample">sample 2</button>
+            <button class="sample">sample 3</button>
+        </div>
+    </div>
+    <div id='sourceContainer'>
+        <textarea name="source" id="source" cols="232" rows="23"></textarea>
+        <button id="eraser">clear</button>
+    </div>
+    
+    <div id='outputContainer'>
+        <pre name="output" id="output"></pre>
+        <button id="copier">copy</button>
+    </div>
+    <script>
+        function alerterCaller(text,bgc,sto,btn){
+            btn.disabled = true;
+            alerter.innerText = text;
+            alerter.style.background = bgc;
+            alerter.style.opacity = '1';
+            setTimeout(() => {
+                alerter.style = '';
+                btn.disabled = false;
+            }, sto);
+        }
+        copier.addEventListener('click',()=>{
+            if(output.innerText == ''){
+                alerterCaller('nothing to copied','red',1000,copier);
+                return;
+            }
+            navigator.clipboard.writeText(output.innerText);
+            alerterCaller('code copied','teal',1000,copier);
+        })
+        generator.addEventListener('click',()=>{
+            if(source.value == ''){
+                alerterCaller('no source found','red',2000,generator);
+                return;
+            }
+            source.value = source.value.replaceAll("\t\t<<< move this line next to it's corresponding element >>>",'');
+            let lineNumber = 0;
+            let lineStartPosition = 0;            
+            let src = source.value;
+            let result;
+            output.innerText = '';
+            let nodeName;
+            let tagName;
+            let attributes = '';
+            let cTagLine = '';
+            while(lineStartPosition != -1){
+                lineNumber++;
+                let lineEndPosition = src.indexOf('\n',lineStartPosition);
+                let newLine;
+                if(lineEndPosition<0){
+                    newLine = src.slice(lineStartPosition);
+                    lineStartPosition = lineEndPosition;
+                }else{
+                    newLine = src.slice(lineStartPosition,lineEndPosition);
+                    lineStartPosition = lineEndPosition+1;
+                }  
+                // extract node & tag name
+                if(/document.createElement/.test(newLine)){                    
+                    if(cTagLine != ''){
+                        if(attributes != ''){
+                            attributes = attributes.slice(0,attributes.length-1);
+                            cTagLine = cTagLine.replace(/document.createElement.+/,`cTag('${tagName}',{ ${attributes} });`);
+                            output.innerText = output.innerText+'\n'+cTagLine;
+                            attributes = '';
+                        }else{
+                            cTagLine = cTagLine.replace(/document.createElement.+/,`cTag('${tagName}');`);
+                            output.innerText = output.innerText+'\n'+cTagLine;
+                        }
+                    } 
+                    nodeName = newLine.match(/var (.+) =/)[1];
+                    tagName = newLine.match(/document.createElement\('(.+)'\)/)[1];                   
+                    cTagLine = newLine;
+
+                }
+                // extract attributes
+                else if(/setAttribute/.test(newLine)){
+                    if(newLine.match(/\s?(.+).setAttribute/)[1].trim() == nodeName){
+                        let key = newLine.match(/setAttribute\((.+)\)/)[1].split(',')[0];
+                        let value = newLine.match(/setAttribute\((.+)\)/)[1].split(',')[1];
+                        attributes += `${key}:${value},`;
+                    }
+                    else{
+                        alerterCaller('move line no: '+lineNumber+' next to the corresponding Node','red',3500,generator);
+                        source.value = source.value.slice(0,lineEndPosition)+"\t\t<<< move this line next to it's corresponding element >>>"+source.value.slice(lineEndPosition,source.value.length)
+                        let selectionStart = source.value.indexOf(newLine);
+                        let selectionEnd = source.value.indexOf('\n',selectionStart);
+                        source.setSelectionRange(selectionStart,selectionEnd);
+                        source.focus();
+                        // source.setSelectionRange(lineStartPosition,lineEndPosition);
+                        output.innerText = '';
+                        return
+                    }
+                }
+                else{
+                    if(cTagLine != ''){
+                        if(attributes != ''){
+                            attributes = attributes.slice(0,attributes.length-1);
+                            cTagLine = cTagLine.replace(/document.createElement.+/,`cTag('${tagName}',{ ${attributes} });`);
+                            output.innerText = output.innerText+'\n'+cTagLine;
+                            attributes = '';
+                        }else{
+                            cTagLine = cTagLine.replace(/document.createElement.+/,`cTag('${tagName}');`);
+                            output.innerText = output.innerText+'\n'+cTagLine;
+                        }
+                        cTagLine = '';
+                        nodeName = '';
+                    }
+                    output.innerText = output.innerText+'\n'+newLine;
+                }        
+                                
+            }
+            output.innerText = output.innerText.replace('\n','');
+        })
+
+        // code for sampls
+        document.querySelectorAll('.sample').forEach((item,indx)=>{
+            item.addEventListener('click',()=>{
+                source.value = samples[indx]
+            })
+        })
+        let samples = [
+`var div2 = document.createElement('div');
+div2.setAttribute('class','form-group row');
+    var div3 = document.createElement('div');
+    div3.setAttribute('class','col-xs-12');
+        var div4 = document.createElement('div');
+        div4.setAttribute('class',"floatleft prelative");
+        div4.setAttribute('id',"all_pages_header_picture");
+            var div5 = document.createElement('div');
+            div5.setAttribute('class','currentPicture');
+        div4.appendChild(div5);
+    div3.appendChild(div4);
+div2.appendChild(div3);`,
+
+`var div = document.createElement('div');									
+div.setAttribute('class','width80 height80 floatleft txtcenter cursor '+id);
+if(data.formData[id] == icon){
+    div.classList.add('boxborder');
+}									
+div.setAttribute('style','padding-top: 25px');
+div.setAttribute('title',icon);
+    var i = document.createElement('i');
+    i.setAttribute('class','fa fa-invelop fa-2');
+div.appendChild(i);
+div.addEventListener('click',function(){
+    document.querySelector('[name=icon]').value = this.title;
+})`,
+
+`var formRow = document.createElement('div');
+formRow.setAttribute('class','row');
+    var div2 = document.createElement('div');
+    div2.setAttribute('class','col-sm-12 roundborder');
+    div2.setAttribute('id','footerPreview');
+        var footer = document.createElement('footer');
+        footer.setAttribute('style','width: 100%;float: left;padding: 20px 0;text-align: left;');
+            var div3 = document.createElement('div');
+            div3.setAttribute('class','container');
+                var div4 = document.createElement('div');
+                div4.setAttribute('class','row');
+                    var div5 = document.createElement('div');
+                    div5.setAttribute('class','col-sm-5');
+                        var p = document.createElement('p');
+                        p.setAttribute('style',"font-size: 15px;line-height: 17px;text-transform: uppercase;margin-bottom: 0;");
+                            var i = document.createElement('i');
+                            i.setAttribute('class','fa fa-map-marker');
+                            i.setAttribute('style',"width: 50px;float: left;font-size: 42px;font-weight: bold;line-height: 50px;");
+                        p.appendChild(i);
+                        p.append('My Cell Shop');
+                            var br = document.createElement('br');
+                        p.appendChild(br);
+                        p.append('4/21 Solimullah Road, Mohammadpur, Dhaka - 1207, United States');
+                    div5.appendChild(p);
+                div4.appendChild(div5);
+                    var div5 = document.createElement('div');
+                    div5.setAttribute('class','col-sm-5 fotter_xs');
+                        var p = document.createElement('p');
+                        p.setAttribute('style',"font-size: 15px;line-height: 17px;text-transform: uppercase;margin-bottom: 0;");
+                            var i = document.createElement('i');
+                            i.setAttribute('class','fa fa-mobile');
+                            i.setAttribute('style',"width: 50px;float: left;font-size: 42px;font-weight: bold;line-height: 50px;");
+                        p.appendChild(i);
+                        p.append('Telephone:');
+                            var a = document.createElement('a');
+                            a.setAttribute('style',"color:inherit;font-size: 15px;line-height: 17px;text-transform: uppercase;");
+                            a.setAttribute('href','tel:+8801911718043');
+                            a.setAttribute('title','+8801911718043');
+                            a.innerHTML = ' +8801911718043';
+                        p.appendChild(a);
+                            var br = document.createElement('br');
+                        p.appendChild(br);
+                        p.append('E-mail:');
+                            var a = document.createElement('a');
+                            a.setAttribute('style',"color:inherit;font-size: 15px;line-height: 17px;text-transform: uppercase;");
+                            a.setAttribute('href','mailto:mdshobhancse@gmail.com');
+                            a.setAttribute('title','mdshobhancse@gmail.com');
+                            a.innerHTML = ' mdshobhancse@gmail.com';
+                        p.appendChild(a);
+                    div5.appendChild(p);
+                div4.appendChild(div5);
+                    var div5 = document.createElement('div');
+                    div5.setAttribute('class','col-sm-2');
+                        var p = document.createElement('p');
+                        p.setAttribute('style',"font-size: 15px;line-height: 17px;text-transform: uppercase;margin-bottom: 0;");
+                        p.innerHTML = 'My Cell Shop<br />© 2021';
+                    div5.appendChild(p);
+                div4.appendChild(div5);
+            div3.appendChild(div4);
+        footer.appendChild(div3);
+    div2.appendChild(footer);
+formRow.appendChild(div2);`
+        ]
+    </script>
+</body>
+</html>
