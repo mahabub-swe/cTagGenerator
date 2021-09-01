@@ -94,6 +94,7 @@
                 btn.disabled = false;
             }, sto);
         }
+        eraser.addEventListener('click',()=>{source.value = ''})
         copier.addEventListener('click',()=>{
             if(output.innerText == ''){
                 alerterCaller('nothing to copied','red',1000,copier);
