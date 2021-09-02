@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>cTag Generator</title>
     <style>
         *{
             box-sizing: border-box;
@@ -159,7 +159,7 @@
                         if(attributes != ''){
                             attributes = attributes.slice(0,attributes.length-1);
                             cTagLine = cTagLine.replace(/document.createElement.+/,`cTag('${tagName}',{ ${attributes} });`);
-                            if(returnTag) return cTagLine.replace(/var .+ = /,'').trim();
+                            if(returnTag) return `(cTag('${tagName}',{ ${attributes} }))`;
                             output.innerText = output.innerText+'\n'+cTagLine;
                             attributes = '';
                         }else{
@@ -214,7 +214,7 @@
                 }
                 else{
                     if(RegExp('.appendChild\\('+nodeName+'\\)').test(newLine)){
-                        output.innerText = output.innerText+'\n'+newLine.replace(nodeName,cTagGenerator(true));
+                        output.innerText = output.innerText+'\n'+newLine.replace(`(${nodeName})`,cTagGenerator(true));
                         attributes = '';
                         cTagLine = '';
                         nodeName = '';
@@ -254,9 +254,9 @@ div2.setAttribute('class','form-group row');
         var div4 = document.createElement('div');
         div4.setAttribute('class',"floatleft prelative");
         div4.setAttribute('id',"all_pages_header_picture");
-            var div5 = document.createElement('div');
-            div5.setAttribute('class','currentPicture');
-        div4.appendChild(div5);
+            var div = document.createElement('div');
+            div.setAttribute('class','currentPicture');
+        div4.appendChild(div);
     div3.appendChild(div4);
 div2.appendChild(div3);`,
 
