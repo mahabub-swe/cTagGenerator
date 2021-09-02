@@ -121,7 +121,7 @@
 
         copier.addEventListener('click',()=>{
             if(output.innerText == ''){
-                alerterCaller('nothing to copied','red',1000,copier);
+                alerterCaller('nothing to be copied','red',1000,copier);
                 return;
             }
             navigator.clipboard.writeText(output.innerText);
