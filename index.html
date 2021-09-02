@@ -281,17 +281,21 @@ div.addEventListener('click',function(){
 
 `\t\t\t\t\t\t\t<<< Avoid this pattern >>>\t\t\t\t\t\t\t
 
-var div168 = document.createElement('div');
-if(item.id) div168.setAttribute('class',"form-control");
-else div168.setAttribute('class',"form-control "+item.id);
-div168.setAttribute('style',"color: inherit;");
-if(item.id == 'offers_email'){
-        var input = document.createElement('input');
-        input.setAttribute('type',"checkbox");
-        input.setAttribute('value',"1");
-    div168.appendChild(input);
-}
-div168.innerHTML = item.label;`
+var divCol = document.createElement('div');
+divCol.setAttribute('class',"col-sm-10");
+    var input = document.createElement('input');
+    if(data.requiredFields.includes(field)){
+        input.setAttribute('readonly',"");
+    }
+    input.setAttribute('type',"text");
+    input.setAttribute('maxlength',"25");
+    input.setAttribute('placeholder',`Appointment field ${AFN_Index}`);
+    input.setAttribute('alt',`Appointment field ${AFN_Index}`);
+    input.setAttribute('title',`${field}`);
+    input.setAttribute('name',"fieldNames[]");
+    input.setAttribute('value',`${field}`);
+    input.setAttribute('class',"form-control placeholder fieldNames");                    
+divCol.appendChild(input);`
         ]
     </script>
 </body>
