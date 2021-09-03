@@ -214,6 +214,7 @@
                             attributes = '';
                         }else{
                             cTagLine = cTagLine.replace(/document.createElement.+/,`cTag('${tagName}');`);
+                            if(returnTag) return `(cTag('${tagName}'))`;
                             output.innerText = output.innerText+'\n'+cTagLine;
                         }
                         cTagLine = '';
