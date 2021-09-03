@@ -188,7 +188,7 @@
                 return;
             }
             output.innerText = '';
-            source.value = source.value.replaceAll(/\s+<<<.+>>>/g,'')+'\n';
+            source.value = source.value.replaceAll(/\s+<<<.+>>>/g,'').trim()+'\n';
 
             let lineNumber = 0;
             let lineStartPosition = 0;            
