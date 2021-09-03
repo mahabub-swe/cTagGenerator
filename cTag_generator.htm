@@ -1,0 +1,392 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>cTag Generator</title>
+    <style>
+        *{
+            box-sizing: border-box;
+        }
+        html,body{
+            height: 100%;
+        }
+        .source{
+            height: 100%;
+            width: 100%;
+            overflow-x: hidden;
+            padding: 15px;
+        }
+        .source::selection{
+            background-color: rgb(255, 0, 0);
+            color: seashell;
+        }
+        .activeSource::selection{
+            background-color: blue!important;
+        }
+        #sampleContiner{
+            display: flex;
+        }
+        #solution{
+            position: absolute;
+            right: 0;
+            top: 0;
+            padding: 10px 50px 20px 10px;
+            box-shadow: 0 0 2px green;
+            display: none;
+            background-color: aquamarine;
+            height: 99%;   
+            margin: 2px 2px 0 0;
+            overflow-y:scroll ;
+            overflow-x: hidden;
+        }
+        #header{
+            font-size: 17px;
+            font-family: 'Times New Roman', Times, serif;
+        }
+        #right{
+            background-color: green;
+            color: seashell;
+            padding: 5px;
+            margin: 0;
+            position: relative;
+        }
+        #wrong{
+            background-color: red;
+            color: seashell;
+            padding: 5px;
+            margin: 0;
+            position: relative;
+        }
+        #warning{
+            color: rgb(153, 255, 0);
+            font-style: italic;
+            font-size: 16px;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        #output{
+            box-shadow: 0 0 3px black ;
+            border: 2px solid gray;
+            height: 100%;
+            width: 100%;
+            overflow-x: hidden;
+            color: blue;
+            padding: 15px;
+        }
+        #outputContainer,#sourceContainer{
+            height: 45%;
+            position: relative;
+        }
+        #outputContainer button,#sourceContainer button{
+            position: absolute;
+            right: 0px;
+            top: 0px;
+            padding: 5px 18px;
+        }
+        button{
+            padding: 5px;
+        }
+        #buttonContainer{
+            display: flex;
+            justify-content: space-between;
+        }
+        #suggestion{
+            flex-grow: 1;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            padding-right: 50px;
+        }
+        #error{
+            color: rgb(255, 0, 0);
+        }
+        #alerter{
+            position: fixed;
+            top: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 8px 20px;
+            transition: .5s;
+            opacity: 0;
+            color: cornsilk;
+        }
+    </style>
+</head>
+<body>
+    <div id="alerter">alert here</div>
+    <div id="buttonContainer">
+        <button id="generator">generate cTag</button>
+        <div id="suggestion"> try samples >>>>>></div>
+        <div id="sampleContiner">
+            <button class="sample">sample 1</button>
+            <button class="sample">sample 2</button>
+            <button class="sample">sample 3</button>
+        </div>
+    </div>
+    <div id='sourceContainer'>
+        <textarea name="source" id="source" class="source" cols="232" rows="23">
+            first formate(indent) codes using local editor(VScode).........
+            and make sure you are following the sample code pattarn........
+
+            happy coding..... :)
+        </textarea>
+        <pre id="solution">solution here........</pre>
+        <button id="eraser">clear</button>
+    </div>
+    
+    <div id='outputContainer'>
+        <pre name="output" id="output"></pre>
+        <button id="copier">copy</button>
+    </div>
+    <script>
+        function alerterCaller(text,bgc,sto,btn){
+            btn.disabled = true;
+            alerter.innerText = text;
+            alerter.style.background = bgc;
+            alerter.style.opacity = '1';
+            setTimeout(() => {
+                alerter.style = '';
+                btn.disabled = false;
+            }, sto);
+        }
+
+        source.addEventListener('click',function(){
+            this.classList.add('activeSource');
+            solution.style.display = 'none';
+        })
+        source.addEventListener('blur',function(){
+            this.classList.remove('activeSource');
+        })
+
+        eraser.addEventListener('click',()=>{
+            source.value = '';
+            solution.style.display = 'none';
+        });
+
+        copier.addEventListener('click',()=>{
+            solution.style.display = 'none';
+            if(output.innerText == ''){
+                alerterCaller('nothing to be copied','red',1000,copier);
+                return;
+            }
+            navigator.clipboard.writeText(output.innerText);
+            alerterCaller('code copied','teal',1000,copier);
+        })
+
+        generator.addEventListener('click',()=>{
+            solution.style.display = 'none';
+            if(source.value == ''){
+                alerterCaller('no source found','red',2000,generator);
+                return;
+            }
+            if(!/document.createElement/.test(source.value)){
+                alerterCaller('no relevent code found for cTag','red',2000,generator);
+                return;
+            }
+            output.innerText = '';
+            source.value = source.value.replaceAll(/\s+<<<.+>>>/g,'')+'\n';
+
+            let lineNumber = 0;
+            let lineStartPosition = 0;            
+            let src = source.value;
+            let nodeName;
+            let tagName;
+            let attributes = '';
+            let cTagLine = '';
+            let queryNode = '';
+
+            while(lineStartPosition != -1){
+                lineNumber++;
+                let lineEndPosition = src.indexOf('\n',lineStartPosition);                
+                let newLine = src.slice(lineStartPosition,lineEndPosition);
+                
+                function cTagGenerator(returnTag=false){
+                    if(cTagLine != ''){
+                        if(attributes != ''){
+                            attributes = attributes.slice(0,attributes.length-1);
+                            cTagLine = cTagLine.replace(/document.createElement.+/,`cTag('${tagName}',{ ${attributes} });`);
+                            if(returnTag) return `(cTag('${tagName}',{ ${attributes} }))`;
+                            output.innerText = output.innerText+'\n'+cTagLine;
+                            attributes = '';
+                        }else{
+                            cTagLine = cTagLine.replace(/document.createElement.+/,`cTag('${tagName}');`);
+                            output.innerText = output.innerText+'\n'+cTagLine;
+                        }
+                        cTagLine = '';
+                        nodeName = '';
+                    }
+                } 
+                // --------------------extract node & tag name--------------------
+                if(/document.createElement/.test(newLine)){ 
+                    // if we have any previous cTagLine then generate it first, then store the new one
+                    cTagGenerator();
+                    nodeName = newLine.match(/var (.+) =/)[1];
+                    tagName = newLine.match(/document.createElement\('(.+)'\)/)[1];                   
+                    cTagLine = newLine;
+                }
+                else if(/var .+ = document.query|document.getElement/.test(newLine)){
+                    queryNode = newLine.match(/var (.+) =/)[1];
+                    output.innerText = output.innerText+'\n'+newLine;
+                }
+
+                // --------------------extract attributes---------------------
+                else if(/setAttribute/.test(newLine)){
+                    if(newLine.match(/(.+).setAttribute/)[1].trim() == nodeName){
+                        let attr = newLine.match(/setAttribute\((.+)\)/)[1];
+                        let key = attr.slice(0,attr.indexOf(','));
+                        let value = attr.slice(attr.indexOf(',')+1);
+                        attributes += `${key}:${value},`;
+                    }
+                    else if(/if|else/.test(newLine)){
+                        // if we have setAttributes with if/else condition, then generate the existing cTagLine and leave it as it is
+                        cTagGenerator();
+                        output.innerText = output.innerText+'\n'+newLine;
+                    }
+                    // new
+                    else if(newLine.match(/(.+).setAttribute/)[1].trim() == queryNode){
+                        output.innerText = output.innerText+'\n'+newLine;
+                    }
+
+                    else{
+                        alerterCaller('move line no: '+lineNumber+' next to the corresponding Node','red',3500,generator);
+                        source.value = source.value.slice(0,lineEndPosition)+"\t\t<<< move this line next to it's corresponding element >>>"+source.value.slice(lineEndPosition,source.value.length)
+                        // let selectionStart = source.value.indexOf(newLine);
+                        let selectionEnd = source.value.indexOf('\n',lineStartPosition);
+                        source.setSelectionRange(lineStartPosition,lineEndPosition);
+                        source.focus();
+                        output.innerText = '';
+                        return
+                    }
+                }
+                else{
+                    if(RegExp('.appendChild\\('+nodeName+'\\)').test(newLine)){
+                        output.innerText = output.innerText+'\n'+newLine.replace(`(${nodeName})`,cTagGenerator(true));
+                        attributes = '';
+                        cTagLine = '';
+                        nodeName = '';
+                    }
+                    else{
+                        cTagGenerator();
+                        output.innerText = output.innerText+'\n'+newLine;
+                    }
+                }
+                
+                // set nextLine's start position
+                if(lineEndPosition<0){
+                    lineStartPosition = lineEndPosition;
+                }else{
+                    lineStartPosition = lineEndPosition+1;
+                }
+                                
+            }
+            output.innerText = output.innerText.trim();
+        })
+
+        //--------------------sampls----------------------
+        document.querySelectorAll('.sample').forEach((item,indx)=>{
+            item.addEventListener('click',()=>{
+                source.value = samples[indx];
+                solution.style.display = 'none'
+                if(indx>0){
+                    source.setSelectionRange(0,source.value.indexOf('\n'));
+                    source.focus();
+                    solution.style.display = 'block';
+                    solution.innerHTML = sampleSolutions[indx];
+                }
+            })
+        })
+        let samples = [
+`var div2 = document.createElement('div');
+div2.setAttribute('class','form-group row');
+    var div3 = document.createElement('div');
+    div3.setAttribute('class','col-xs-12');
+        var div4 = document.createElement('div');
+        div4.setAttribute('class',"floatleft prelative");
+        div4.setAttribute('id',"all_pages_header_picture");
+            var div = document.createElement('div');
+            div.setAttribute('class','currentPicture');
+        div4.appendChild(div);
+    div3.appendChild(div4);
+div2.appendChild(div3);`,
+
+`\t\t\t\t\t\t\t<<< Avoid this pattern >>>\t\t\t\t\t\t\t
+
+var div = document.createElement('div');									
+div.setAttribute('class','width80 height80 floatleft txtcenter cursor '+id);
+if(data.formData[id] == icon){
+    div.classList.add('boxborder');
+}									
+div.setAttribute('style','padding-top: 25px');
+div.setAttribute('title',icon);
+    var i = document.createElement('i');
+    i.setAttribute('class','fa fa-invelop fa-2');
+div.appendChild(i);
+div.addEventListener('click',function(){
+    document.querySelector('[name=icon]').value = this.title;
+})`,
+
+`\t\t\t\t\t\t\t<<< Avoid this pattern >>>\t\t\t\t\t\t\t
+
+var divCol = document.createElement('div');
+divCol.setAttribute('class',"col-sm-10");
+    var input = document.createElement('input');    
+    input.setAttribute('type',"text");
+    input.setAttribute('maxlength',"25");
+    input.setAttribute('placeholder','Appointment field');
+    input.setAttribute('alt','Appointment field');
+    input.setAttribute('title','field');
+    input.setAttribute('name',"fieldNames[]");
+    input.setAttribute('value','field');
+    input.setAttribute('class',"form-control placeholder fieldNames");
+    if(data.requiredFields.includes(field)){
+        input.setAttribute('readonly',"");
+    }                    
+divCol.appendChild(input);`
+        ]
+        let sampleSolutions = [
+            '',
+`\t\t<<< <span id='header'>Avoid using seAttribute other than next to the Element</span> >>>\t\t
+
+var div = document.createElement('div');									
+div.setAttribute('class','width80 height80 floatleft txtcenter cursor '+id);
+<pre id='right'>div.setAttribute('style','padding-top: 25px');      <span id='warning'><<< use here</span>
+div.setAttribute('title',icon);</pre>
+if(data.formData[id] == icon){
+    div.classList.add('boxborder');
+}									
+<pre id='wrong'>div.setAttribute('style','padding-top: 25px');      <span id='warning'><<< don't use here</span>
+div.setAttribute('title',icon);</pre>
+    var i = document.createElement('i');
+    i.setAttribute('class','fa fa-invelop fa-2');
+div.appendChild(i);
+div.addEventListener('click',function(){
+    document.querySelector('[name=icon]').value = this.title;
+})
+`,
+`\t\t<<< <span id='header'>Avoid using seAttribute into conditional block</span> >>>\t\t\t\t\t\t\t
+
+var divCol = document.createElement('div');
+divCol.setAttribute('class',"col-sm-10");
+    var input = document.createElement('input');    
+    input.setAttribute('type',"text");
+    input.setAttribute('maxlength',"25");
+    input.setAttribute('placeholder','Appointment field');
+    input.setAttribute('alt','Appointment field');
+    input.setAttribute('title','field');
+    input.setAttribute('name',"fieldNames[]");
+    input.setAttribute('value','field');
+    input.setAttribute('class',"form-control placeholder fieldNames");
+    <pre id='right'>if(data.requiredFields.includes(field)) input.setAttribute('readonly',"");      <span id='warning'><<< use single line condition</span></pre>
+    <pre id='wrong'>if(data.requiredFields.includes(field)){        <span id='warning'><<< don't use block</span>
+        input.setAttribute('readonly',"");
+    }</pre>        
+divCol.appendChild(input);
+`,
+        ]
+    </script>
+</body>
+</html>
