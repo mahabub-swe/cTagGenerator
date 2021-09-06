@@ -225,7 +225,7 @@
                 if(/document.createElement/.test(newLine)){ 
                     // if we have any previous cTagLine then generate it first, then store the new one
                     cTagGenerator();
-                    nodeName = newLine.match(/var (.+) =/)[1];
+                    nodeName = newLine.match(/var (.+)=/)[1].trim();
                     tagName = newLine.match(/document.createElement\('(.+)'\)/)[1];                   
                     cTagLine = newLine;
                 }
